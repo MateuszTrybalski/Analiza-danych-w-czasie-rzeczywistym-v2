@@ -159,7 +159,7 @@ def main():
         .outputMode("append")
         .format("csv")
         .option("path", ALERTS_CSV_PATH)
-        .option("checkpointLocation", "/tmp/spark-checkpoint-alerts")
+        .option("checkpointLocation", "/data/_checkpoint-alerts")
         .option("header", "true")
         .queryName("alerts-csv")
         .start()

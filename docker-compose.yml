@@ -47,7 +47,7 @@ services:
   #  SPARK  (bitnami — stabilny, przetestowany obraz)
   # -----------------------------------------------
   spark-master:
-    image: bitnami/spark:3.5
+    image: bitnamilegacy/spark:3.5
     container_name: spark-master
     environment:
       - SPARK_MODE=master
@@ -55,9 +55,11 @@ services:
     ports:
       - "8080:8080"
       - "7077:7077"
+    volumes:
+      - ./data:/data
 
   spark-worker:
-    image: bitnami/spark:3.5
+    image: bitnamilegacy/spark:3.5
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -66,6 +68,8 @@ services:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=1G
       - SPARK_WORKER_CORES=1
+    volumes:
+      - ./data:/data
 
   # -----------------------------------------------
   #  PRODUCER

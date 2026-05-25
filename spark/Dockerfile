@@ -1,4 +1,4 @@
-FROM bitnami/spark:3.5
+FROM bitnamilegacy/spark:3.5
 
 USER root
 
@@ -17,9 +17,17 @@ RUN mkdir -p /opt/spark-extra-jars && \
 
 COPY spark_streaming.py /app/spark_streaming.py
 
+# Belt-and-suspenders: nawet gdyby cos chcialo uzyc Ivy, ma katalog z prawem zapisu
+RUN mkdir -p /tmp/.ivy2 /tmp/spark-events && chmod -R 777 /tmp/.ivy2 /tmp/spark-events
+
+ENV HOME=/tmp
+ENV IVY_HOME=/tmp/.ivy2
+
 USER 1001
 
 CMD ["spark-submit", \
      "--master", "spark://spark-master:7077", \
+     "--conf", "spark.jars.ivy=/tmp/.ivy2", \
+     "--conf", "spark.driver.extraJavaOptions=-Duser.home=/tmp", \
      "--jars", "/opt/spark-extra-jars/spark-sql-kafka.jar,/opt/spark-extra-jars/kafka-clients.jar,/opt/spark-extra-jars/spark-token-provider.jar,/opt/spark-extra-jars/commons-pool2.jar", \
      "/app/spark_streaming.py"]

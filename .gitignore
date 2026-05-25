@@ -21,8 +21,9 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data (opcjonalnie - alerts.csv jest generowany)
-# data/alerts.csv
+# Data — generowane przez Sparka
+data/alerts.csv/
+data/_checkpoint-alerts/
 
 # Docker
 *.log
