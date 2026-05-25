@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (opcjonalnie - alerts.csv jest generowany)
+# data/alerts.csv
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model files
+*.pkl

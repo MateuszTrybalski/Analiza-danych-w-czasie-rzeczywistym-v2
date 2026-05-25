@@ -1,0 +1,117 @@
+services:
+  # -----------------------------------------------
+  #  INFRASTRUKTURA
+  # -----------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-init
+    depends_on:
+      - broker
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      echo 'Czekam na Kafke...'
+      cub kafka-ready -b broker:9092 1 60
+      echo 'Tworze topiki...'
+      kafka-topics --create --if-not-exists --topic transactions --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
+      kafka-topics --create --if-not-exists --topic alerts       --bootstrap-server broker:9092 --partitions 1 --replication-factor 1
+      echo 'Topiki gotowe:'
+      kafka-topics --list --bootstrap-server broker:9092
+
+  # -----------------------------------------------
+  #  SPARK  (bitnami — stabilny, przetestowany obraz)
+  # -----------------------------------------------
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+
+  # -----------------------------------------------
+  #  PRODUCER
+  # -----------------------------------------------
+  producer:
+    build:
+      context: ./producer
+    container_name: producer
+    depends_on:
+      - broker
+      - kafka-init
+    restart: on-failure
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+
+  # -----------------------------------------------
+  #  SPARK STREAMING  (custom obraz z JARem Kafki)
+  # -----------------------------------------------
+  spark-streaming:
+    build:
+      context: ./spark
+    container_name: spark-streaming
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+      - broker
+      - kafka-init
+    volumes:
+      - ./data:/data
+    ports:
+      - "4040:4040"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+
+  # -----------------------------------------------
+  #  DASHBOARD
+  # -----------------------------------------------
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: dashboard
+    depends_on:
+      - spark-streaming
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/data
+    environment:
+      ALERTS_CSV_PATH: /data/alerts.csv

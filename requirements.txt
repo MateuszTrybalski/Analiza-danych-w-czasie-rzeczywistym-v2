@@ -1,0 +1,10 @@
+# Producer
+kafka-python==2.0.2
+
+# Dashboard
+streamlit==1.31.0
+pandas==2.1.4
+plotly==5.18.0
+
+# Spark (zainstalowany w kontenerze Spark)
+# pyspark==3.5.0
